@@ -4,8 +4,20 @@ import './App.scss';
 import usersFromServer from './api/users';
 import todosFromServer from './api/todos';
 
+import { Todo } from './types/Todo';
+import { TodoList } from './components/TodoList/TodoList';
+
 export const App = () => {
-  const [todos, setTodos] = useState(todosFromServer);
+  const preparedTodos: Todo[] = todosFromServer.map(todo => {
+    const user = usersFromServer.find(userItem => userItem.id === todo.userId)!;
+
+    return {
+      ...todo,
+      user,
+    };
+  });
+
+  const [todos, setTodos] = useState(preparedTodos);
 
   const [title, setTitle] = useState('');
   const [userId, setUserId] = useState(0);
@@ -13,8 +25,8 @@ export const App = () => {
   const [titleError, setTitleError] = useState(false);
   const [userError, setUserError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
 
     let hasError = false;
 
@@ -34,17 +46,17 @@ export const App = () => {
 
     const newId = Math.max(...todos.map(todo => todo.id)) + 1;
 
-    const user = usersFromServer.find(u => u.id === userId);
+    const user = usersFromServer.find(userItem => userItem.id === userId)!;
 
-    const newTodo = {
+    const newTodo: Todo = {
       id: newId,
       title,
-      userId,
       completed: false,
+      userId,
       user,
     };
 
-    setTodos(prev => [...prev, newTodo]);
+    setTodos(currentTodos => [...currentTodos, newTodo]);
 
     setTitle('');
     setUserId(0);
@@ -56,13 +68,16 @@ export const App = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="field">
+          <label htmlFor="title">Title</label>
+
           <input
+            id="title"
             type="text"
             data-cy="titleInput"
             placeholder="Enter a title"
             value={title}
-            onChange={e => {
-              setTitle(e.target.value);
+            onChange={event => {
+              setTitle(event.target.value);
               setTitleError(false);
             }}
           />
@@ -71,15 +86,19 @@ export const App = () => {
         </div>
 
         <div className="field">
+          <label htmlFor="user">User</label>
+
           <select
+            id="user"
             data-cy="userSelect"
             value={userId}
-            onChange={e => {
-              setUserId(Number(e.target.value));
+            onChange={event => {
+              setUserId(Number(event.target.value));
               setUserError(false);
             }}
           >
             <option value="0">Choose a user</option>
+
             {usersFromServer.map(user => (
               <option key={user.id} value={user.id}>
                 {user.name}
@@ -95,29 +114,7 @@ export const App = () => {
         </button>
       </form>
 
-      <section className="TodoList">
-        {todos.map(todo => {
-          const user = usersFromServer.find(u => u.id === todo.userId);
-
-          return (
-            <article
-              key={todo.id}
-              data-id={todo.id}
-              className={`TodoInfo ${
-                todo.completed ? 'TodoInfo--completed' : ''
-              }`}
-            >
-              <h2 className="TodoInfo__title">{todo.title}</h2>
-
-              {user && (
-                <a className="UserInfo" href={`mailto:${user.email}`}>
-                  {user.name}
-                </a>
-              )}
-            </article>
-          );
-        })}
-      </section>
+      <TodoList todos={todos} />
     </div>
   );
 };
