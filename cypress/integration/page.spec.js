@@ -13,9 +13,9 @@ const page = {
 
 let failed = false;
 
-Cypress.on('fail', (e) => {
+Cypress.on('fail', (error) => {
   failed = true;
-  throw e;
+  throw error;
 });
 
 describe('Page', () => {
